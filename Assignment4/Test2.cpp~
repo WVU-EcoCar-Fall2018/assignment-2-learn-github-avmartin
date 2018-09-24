@@ -1,0 +1,39 @@
+// Copyright 2018 Joseph Smith
+#include <stdio.h>
+#include <stdint.h>
+#include <thread>
+#include <mutex>
+
+std::mutex mtx;
+
+int CANDecode(uint8_t message[]) {
+mtx.lock();
+message[0] = message[0] & 0x3f;
+uint16_t longMessage = message[0];
+longMessage = longMessage << 8;
+longMessage += message[1];
+longMessage = longMessage >> 5;
+printf("Decoded CAN Signal:  %d \n", longMessage);
+mtx.unlock();
+return static_cast<int>(longMessage);
+}
+
+void CANUpdate(uint8_t message[]) {
+mtx.lock();
+message[1] = message[1] +10 ;
+mtx.unlock();
+}
+
+int main() {
+uint8_t CAN_data[5] = {0x01, 0x40, 0x00, 0x00, 0x00};
+
+std::thread th_CANDecode(CANDecode, CAN_data);
+std::thread th_CANUpdate(CANUpdate, CAN_data);
+
+th_CANDecode.join();
+th_CANUpdate.join();
+
+return(0);
+}
+
+
